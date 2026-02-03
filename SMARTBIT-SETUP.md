@@ -155,6 +155,96 @@ docker compose -f docker-compose.smartbit.yaml up -d
 - Verify the port in `.env` (HTTP_PUBLISH_PORT)
 - Check firewall settings
 
+## 🎨 Customizing Branding (Login Page, App Name, etc.)
+
+Branding in ERPNext/Frappe is controlled at **two levels**:
+
+### 1. Template Level (Code)
+The login page template uses a fallback in `frappe/www/login.html`:
+```html
+<h4>{{ _('Login to {0}').format(app_name or _("Smartbits LCS")) }}</h4>
+```
+This is your custom branding text that appears if `app_name` is not set.
+
+### 2. Database Level (Critical!)
+The actual value is read from the `tabSingles` table in the database. Even if your templates have the correct fallback text, the database may have `app_name: "Frappe"` set.
+
+**To check current app_name:**
+```bash
+docker compose -f docker-compose.smartbit.yaml exec backend bench --site localhost mariadb -e \
+  "SELECT field, value FROM \`tabSingles\` WHERE doctype = 'Website Settings' AND field = 'app_name';"
+```
+
+**To update app_name:**
+```bash
+docker compose -f docker-compose.smartbit.yaml exec backend bench --site localhost mariadb -e \
+  "UPDATE \`tabSingles\` SET value = 'Smartbits LCS' WHERE doctype = 'Website Settings' AND field = 'app_name';"
+```
+
+**After changing, restart services:**
+```bash
+docker compose -f docker-compose.smartbit.yaml exec backend bench --site localhost clear-cache
+docker compose -f docker-compose.smartbit.yaml restart backend frontend
+```
+
+### Why This Matters
+The `frappe.get_website_settings("app_name")` function in `frappe/www/login.py` reads from the database, not from your template fallback. If the database has "Frappe", that's what will display.
+
+### Other Branding Settings in tabSingles
+The `tabSingles` table stores many single-document settings. Check what else might need updating:
+```sql
+SELECT field, value FROM \`tabSingles\` WHERE doctype = 'Website Settings';
+```
+
+## 🖼️ Changing the Login Logo
+
+To customize the logo shown on the login page:
+
+### 1. Add Logo Files
+Place your logo files in `frappe/frappe/public/images/`:
+- `sbs-logo.png` - Primary logo (light)
+- `sbs-logo-dark.png` - Dark variant (optional)
+
+### 2. Update Login Template
+Edit `frappe/frappe/www/login.html` and update the `logo_section` macro:
+
+```html
+{% macro logo_section(title=null) %}
+<div class="page-card-head">
+	<img class="app-logo" src="/images/sbs-logo.png">
+	{% if title %}
+	<h4>{{ _(title)}}</h4>
+	{% else %}
+	<h4>{{ _('Login to {0}').format(app_name or _("Smartbits LCS")) }}</h4>
+	{% endif %}
+</div>
+{% endmacro %}
+```
+
+### 3. Rebuild and Deploy
+```bash
+# Commit changes to your frappe fork first
+cd /path/to/frappe
+git add .
+git commit -m "Add Smartbits logo"
+git push origin rebrand-smartbits-lcs
+
+# Rebuild Docker image
+cd /path/to/frappe_docker
+./build-custom-image.sh
+docker compose -f docker-compose.smartbit.yaml down
+docker compose -f docker-compose.smartbit.yaml up -d
+```
+
+### Quick Fix (Container Running)
+Copy files directly to running container:
+```bash
+docker cp sbs-logo.png frappe_docker-backend-1:/home/frappe/frappe-bench/apps/frappe/frappe/public/images/sbs-logo.png
+docker compose -f docker-compose.smartbit.yaml restart backend frontend
+```
+
+**Note**: For production, always push changes to your GitHub fork so they're included in the Docker build.
+
 ## 📚 Additional Resources
 
 - [frappe_docker Documentation](./docs/)

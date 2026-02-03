@@ -1,0 +1,69 @@
+name: Build Smartbit ERPNext Image
+
+on:
+  push:
+    branches:
+      - smartbit-custom-setup
+    paths:
+      - 'images/smartbit/**'
+      - 'apps.json'
+      - 'build-custom-image.sh'
+      - 'Containerfile'
+  workflow_dispatch:
+    inputs:
+      frappe_branch:
+        description: 'Frappe branch to build with'
+        required: false
+        default: 'rebrand-smartbits-lcs'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: smartbit-solutions/erpnext
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.ref_name }}
+            type=sha,prefix=
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./images/smartbit/Containerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_VERSION=version-16
+            FRAPPE_PATH=https://github.com/Smartbit-Solutions/frappe
+            FRAPPE_BRANCH=${{ github.event.inputs.frappe_branch || 'rebrand-smartbits-lcs' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: echo "Image built: ${{ steps.meta.outputs.tags }}"
