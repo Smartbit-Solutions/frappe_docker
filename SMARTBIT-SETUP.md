@@ -140,8 +140,28 @@ Commit and push the changes to your `frappe_docker` fork. GitHub Actions will au
 
 ### Can't access localhost:8080
 - Check if containers are running: `docker compose -f docker-compose.smartbit.yaml ps`
-- Verify the port in `.env` (HTTP_PUBLISH_PORT)
+- Verify the port in `.env` (HTTP_PUBLICY_PORT)
 - Check firewall settings
+
+### Database connection errors after redeploy
+If containers get new IPs after redeploy, the DB user might have wrong host permissions:
+```bash
+# Grant access for wildcard host
+docker compose -f docker-compose.smartbit.yaml exec db bash -c \
+  "mariadb -u root -p${MARIADB_ROOT_PASSWORD} -e \"GRANT ALL PRIVILEGES ON _63ffd6636b0899e0.* TO '_63ffd6636b0899e0'@'%' IDENTIFIED BY 'YOUR_PASSWORD'; FLUSH PRIVILEGES\""
+```
+
+### Logo shows ERPNext instead of custom logo
+The logo is controlled by `Navbar Settings` in the database:
+```bash
+# Set custom logo
+docker compose -f docker-compose.smartbit.yaml exec backend bench --site localhost mariadb -e \
+  "UPDATE \`tabSingles\` SET value = '/images/sbs-logo.png' WHERE doctype = 'Navbar Settings' AND field = 'app_logo';"
+
+# Then restart all containers to clear cache
+docker compose -f docker-compose.smartbit.yaml down
+docker compose -f docker-compose.smartbit.yaml up -d
+```
 
 ## 🎨 Customizing Branding (Login Page, App Name, etc.)
 
