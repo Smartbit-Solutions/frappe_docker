@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x build-custom-image.sh generate-compose.sh)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd Smartbit Solutions custom ERPNext configuration\n\n- Add apps.json with custom Frappe and ERPNext forks\n  - Frappe: rebrand-smartbits-lcs branch\n  - ERPNext: rebrand-to-smartbits-erp branch\n- Add build-custom-image.sh script for building Docker image\n- Add generate-compose.sh script for generating docker-compose config\n- Add .env.smartbit.example with configuration template\n- Add SMARTBIT-SETUP.md with complete setup documentation\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(./build-custom-image.sh:*)"
+    ]
+  }
+}

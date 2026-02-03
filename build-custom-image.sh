@@ -28,11 +28,12 @@ echo "   Apps from: apps.json"
 echo ""
 
 docker build \
+  --build-arg=BASE_VERSION=version-16 \
   --build-arg=FRAPPE_PATH=https://github.com/Smartbit-Solutions/frappe \
   --build-arg=FRAPPE_BRANCH=rebrand-smartbits-lcs \
   --build-arg=APPS_JSON_BASE64=$APPS_JSON_BASE64 \
   --tag=smartbit-erp:latest \
-  --file=images/layered/Containerfile \
+  --file=images/smartbit/Containerfile \
   --progress=plain \
   .
 
