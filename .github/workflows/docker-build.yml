@@ -5,16 +5,16 @@ on:
     branches:
       - smartbit-custom-setup
     paths:
-      - 'images/smartbit/**'
-      - 'apps.json'
-      - 'build-custom-image.sh'
-      - 'Containerfile'
+      - images/smartbit/**
+      - apps.json
+      - build-custom-image.sh
+      - Containerfile
   workflow_dispatch:
     inputs:
       frappe_branch:
-        description: 'Frappe branch to build with'
+        description: Frappe branch to build with
         required: false
-        default: 'rebrand-smartbits-lcs'
+        default: rebrand-smartbits-lcs
 
 env:
   REGISTRY: ghcr.io
@@ -67,4 +67,4 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Print image digest
-        run: echo "Image built and pushed: ${{ steps.meta.outputs.tags }}"
+        run: echo "Image built and pushed"
