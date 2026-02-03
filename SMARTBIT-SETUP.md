@@ -6,7 +6,23 @@ This guide explains how to build and run your custom Smartbit Solutions ERPNext 
 
 - **Frappe Framework**: Your custom fork at https://github.com/Smartbit-Solutions/frappe (branch: `rebrand-smartbits-lcs`)
 - **ERPNext**: Your custom fork at https://github.com/Smartbit-Solutions/erpnext (branch: `rebrand-to-smartbits-erp`)
-- **Image name**: `smartbit-erp:latest`
+- **Docker Image**: Auto-built by GitHub Actions at `ghcr.io/smartbit-solutions/frappe:rebrand-smartbits-lcs`
+
+## 🚀 CI/CD Pipeline
+
+Your setup includes **automatic Docker builds** via GitHub Actions:
+
+### Frappe Repository (`.github/workflows/docker-build.yml`)
+- Triggers on push to `rebrand-smartbits-lcs` branch
+- Builds when `frappe/www/login.html` or `frappe/public/images/**` change
+- Pushes to: `ghcr.io/smartbit-solutions/frappe:rebrand-smartbits-lcs`
+
+### Frappe_docker Repository (`.github/workflows/docker-build.yml`)
+- Triggers on push to `smartbit-custom-setup` branch
+- Builds when Docker config changes
+- Uses the auto-built frappe image from above
+
+**No manual builds required!** Just push changes to your GitHub repos and the images will be auto-built.
 
 ## 📋 Prerequisites
 
@@ -16,20 +32,7 @@ Make sure you have installed:
 
 ## 🚀 Quick Start
 
-### 1. Build the Docker Image
-
-```bash
-./build-custom-image.sh
-```
-
-This will:
-- Encode your `apps.json` configuration
-- Build a Docker image with your custom Frappe and ERPNext forks
-- Tag it as `smartbit-erp:latest`
-
-**Note**: This can take 15-30 minutes depending on your internet speed and computer.
-
-### 2. Configure Environment Variables
+### 1. Configure Environment Variables
 
 First, create your `.env` file from the example:
 
@@ -44,38 +47,34 @@ Then edit the `.env` file and **change the database password**:
 DB_PASSWORD=your_super_secure_password_here
 ```
 
-You can also customize other settings like:
-- `HTTP_PUBLISH_PORT` (default: 8080)
-- `LETSENCRYPT_EMAIL` (for SSL certificates)
-- `FRAPPE_SITE_NAME_HEADER` (for custom site names)
+**Choose your image source:**
+```bash
+# Option A: Use CI-built image from GitHub Container Registry (recommended)
+CUSTOM_IMAGE=ghcr.io/smartbit-solutions/frappe
+CUSTOM_TAG=rebrand-smartbits-lcs
+PULL_POLICY=always
 
-### 3. Generate Docker Compose Configuration
+# Option B: Build locally (for development)
+# CUSTOM_IMAGE=smartbit-erp
+# CUSTOM_TAG=latest
+# PULL_POLICY=never
+```
+
+### 2. Generate Docker Compose Configuration
 
 ```bash
 ./generate-compose.sh
 ```
 
-This creates `docker-compose.smartbit.yaml` with all the necessary services:
-- Your custom ERPNext application
-- MariaDB database
-- Redis cache and queue
-- Nginx proxy
+This creates `docker-compose.smartbit.yaml` with all the necessary services.
 
-### 4. Start the Containers
+### 3. Start the Containers
 
 ```bash
 docker compose -f docker-compose.smartbit.yaml up -d
 ```
 
-Wait a few minutes for the site to be created. You can watch the logs:
-
-```bash
-docker compose -f docker-compose.smartbit.yaml logs -f create-site
-```
-
-### 5. Access ERPNext
-
-Once the `create-site` container finishes:
+### 4. Access ERPNext
 
 - **URL**: http://localhost:8080
 - **Username**: Administrator
@@ -110,9 +109,8 @@ docker compose -f docker-compose.smartbit.yaml exec backend bench --help
 
 ## 📝 Adding More Custom Apps Later
 
-When you want to add more custom apps:
+When you want to add more custom apps, edit `frappe_docker/apps.json`:
 
-1. Edit `apps.json` and add your new app:
 ```json
 [
   {
@@ -126,17 +124,7 @@ When you want to add more custom apps:
 ]
 ```
 
-2. Rebuild the image:
-```bash
-./build-custom-image.sh
-```
-
-3. Regenerate and restart:
-```bash
-./generate-compose.sh
-docker compose -f docker-compose.smartbit.yaml down
-docker compose -f docker-compose.smartbit.yaml up -d
-```
+Commit and push the changes to your `frappe_docker` fork. GitHub Actions will automatically rebuild the image.
 
 ## 🐛 Troubleshooting
 
@@ -255,10 +243,19 @@ docker compose -f docker-compose.smartbit.yaml restart backend frontend
 
 When you update your custom Frappe or ERPNext code:
 
-1. Rebuild the image: `./build-custom-image.sh`
-2. Recreate containers:
+1. **Push changes to GitHub**:
+```bash
+git add .
+git commit -m "Your changes"
+git push origin rebrand-smartbits-lcs
+```
+
+2. **GitHub Actions automatically rebuilds** the Docker image (~5-10 minutes)
+
+3. **Pull the new image and restart**:
 ```bash
 docker compose -f docker-compose.smartbit.yaml down
+docker compose -f docker-compose.smartbit.yaml pull
 docker compose -f docker-compose.smartbit.yaml up -d
 ```
 
