@@ -28,6 +28,7 @@ echo "   Apps from: apps.json"
 echo ""
 
 docker build \
+  --no-cache \
   --build-arg=BASE_VERSION=version-16 \
   --build-arg=FRAPPE_PATH=https://github.com/Smartbit-Solutions/frappe \
   --build-arg=FRAPPE_BRANCH=rebrand-smartbits-lcs \
