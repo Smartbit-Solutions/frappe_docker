@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - smartbit-custom-setup
+      # The image tag is github.ref_name, so this branch publishes :demo.
+      # It exists so demo instances can move ahead of the tag erp-dev3 runs
+      # (smartbit-custom-setup-he) without reshipping production.
+      - demo
     paths:
       - images/smartbit/**
       - apps.json
