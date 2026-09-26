@@ -38,6 +38,15 @@ if [[ -z "$CLIENT_MAX_BODY_SIZE" ]]; then
   export CLIENT_MAX_BODY_SIZE=50m
 fi
 
+# HE-679 — the DNS server nginx re-resolves BACKEND / SOCKETIO with. Defaults
+# to the container's own resolver: Docker's embedded DNS (127.0.0.11) on a
+# compose network, the cluster DNS on Kubernetes.
+if [[ -z "$NGINX_RESOLVER" ]]; then
+  NGINX_RESOLVER=$(awk '/^nameserver/ { print $2; exit }' /etc/resolv.conf)
+  export NGINX_RESOLVER=${NGINX_RESOLVER:-127.0.0.11}
+  echo "NGINX_RESOLVER defaulting to $NGINX_RESOLVER"
+fi
+
 # shellcheck disable=SC2016
 envsubst '${BACKEND}
   ${SOCKETIO}
@@ -46,7 +55,8 @@ envsubst '${BACKEND}
   ${UPSTREAM_REAL_IP_RECURSIVE}
   ${FRAPPE_SITE_NAME_HEADER}
   ${PROXY_READ_TIMEOUT}
-	${CLIENT_MAX_BODY_SIZE}' \
+	${CLIENT_MAX_BODY_SIZE}
+  ${NGINX_RESOLVER}' \
   </templates/nginx/frappe.conf.template >/etc/nginx/conf.d/frappe.conf
 
 nginx -g 'daemon off;'
